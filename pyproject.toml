@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robot_harness"
+version = "0.0.1"
+description = "External-Agent-First Robot Control Harness for UFACTORY xArm 6 + Gripper G2 + Orbbec Gemini 305 (MuJoCo & Real)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "mujoco>=3.0",
+    "pyyaml>=6.0",
+    "opencv-python>=4.8",
+    "httpx>=0.25",
+    "pydantic>=2.5",
+    "xarm-python-sdk>=1.13",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.installed.cfg
+*.egg
+build/
+dist/
+
+# Test & Lint Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+
+# Runtime & Simulation Artifacts
+runs/
+MUJOCO_LOG.TXT
+*.sock
+*.mp4
+
+# Environment & Secrets
+.env
+.venv/
+venv/

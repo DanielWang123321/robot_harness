@@ -1,0 +1,50 @@
+schema_version: 1
+
+robot:
+  model: xarm6
+  ip: "192.168.1.60"
+  gripper: gripper_g2
+  tcp_offset_z_m: 0.1735
+  kinematics_calibration: "configs/xarm6_kinematics_L56A01.yaml"
+
+workspace_limits:
+  x_min_m: 0.15
+  x_max_m: 0.65
+  y_min_m: -0.45
+  y_max_m: 0.45
+  z_min_m: 0.008        # 桌面防撞最低 TCP Z 高度 (m)
+  z_max_m: 0.55
+  max_tilt_deg: 10.0    # 允许偏离垂直向下抓取姿态的最大角度 (deg)
+  max_cart_vel_m_s: 0.25
+  real_safe_vel_m_s: 0.10
+
+pick_place:
+  scene_xml: "assets/models/xarm6_with_gripper/scene_pick_place.xml"
+  cube_xy: [0.30, 0.0]
+  target_xy: [0.30, 0.30]
+  cube_half_m: 0.015
+  cube_mass_kg: 0.017
+  grasp_gap_m: 0.022
+  approach_m: 0.10
+  lift_z_m: 0.30
+  flange_grasp_z_m: 0.1871
+  cart_v_m_s: 0.15
+  cart_a_m_s2: 0.80
+  place_tolerance_mm: 50.0
+
+camera:
+  model: orbbec_gemini_305
+  serial: "CV2C861000RV"
+  width: 640
+  height: 480
+  fps: 30
+  calibration_file: "configs/camera_calibration.yaml"
+  observation_joints_rad: [0.0, -0.6315299, -0.8331505, 0.0, 1.4646804, 0.0]
+
+llm:
+  provider: "auto"      # "openai_compatible" 或 "rule_based" 或 "auto"
+  api_base: "https://api.openai.com/v1"
+  model: "gpt-4o-mini"
+  temperature: 0.0
+  timeout_s: 15.0
+
