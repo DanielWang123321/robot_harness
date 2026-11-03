@@ -24,3 +24,11 @@ MUJOCO_LOG.TXT
 .env
 .venv/
 venv/
+
+# Documentation & Scripts
+scripts/
+AGENTS.md
+PROJECT_STORY.md
+plan.md
+prd.md
+worklog.md

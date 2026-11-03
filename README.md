@@ -1,73 +1,81 @@
 # robot_harness
 
-面向外部 Agent（Antigravity / Claude Code / Cursor 等）的 **UFACTORY xArm 6 + Gripper G2 + Orbbec Gemini 305** 机器人闭环控制宿主（Robot Control Harness），同时支持 **MuJoCo 高保真物理仿真 (`sim`)** 与 **真机控制 (`real`)**。
+A **Robot Control Harness** for external AI agents (Antigravity / Claude / Cursor, etc.) targeting **UFACTORY xArm 6 + Gripper G2 + Orbbec Gemini 305**, supporting both **MuJoCo high-fidelity physics simulation (`sim`)** and **real hardware control (`real`)**.
 
-## 核心特性
+## Key Features
 
-1. **100% 对齐 `xarm-python-sdk` (`XArmAPI`) 签名**：
-   - 仿真后端（`MuJoCoBackend`）与真机后端（`XArmBackend`）共享完全一致的 `XArmAPI` 核心方法签名（`get_position`、`set_position`、`get_servo_angle`、`set_servo_angle`、`get_gripper_position`、`set_gripper_position`、`set_gripper_g2_position`、`set_tcp_offset`、`reset` 等）与返回码约定（`0` 为成功，`31` 为越界拦截，`32` 为碰撞拦截）。
-   - `set_position` 原生支持缺省参数保持当前值（如仅传 `z=100` 实现垂直升降）。
-2. **外部 Agent 优先的多轮闭环操控 (`Observe -> Act -> Feedback`)**：
-   - **常驻会话守护进程 (`SessionDaemon`)**：通过本地 Unix Domain Socket (`runs/harness.sock`) 保持 MuJoCo 3D 交互窗口、视频录制和机械臂状态在多次 CLI 调用之间存活。
-   - **视觉 + 物理双模态反馈**：每次观测或动作均返回 TCP 位姿 (`mm`/`deg`)、关节角、夹爪开合度、**双指真实接触力 (`contact_forces_n`)**、场景物体 3D 坐标以及相机/仿真快照 PNG (`runs/latest_view.png`)。
-   - **MCP Server (`stdio`)**：原生支持 JSON-RPC 2.0 MCP 工具调用（`xarm_observe`、`xarm_set_position`、`xarm_set_gripper_g2_position`、`xarm_pick`、`xarm_place` 等）。
-3. **内置多层安全护栏**：
-   - 笛卡尔工作空间硬限位与桌面防撞保护（$Z \ge 8\text{ mm}$）。
-   - 基于膨胀胶囊模型的关节限位与自碰撞预检（`CollisionChecker`）。
-   - 真机默认 `read_only=True` 门锁，需显式传入 `--confirm-real` 方可解锁运动指令。
+1. **100% API-compatible with `xarm-python-sdk` (`XArmAPI`)**:
+   - Simulation backend (`MuJoCoBackend`) and real hardware backend (`XArmBackend`) share identical `XArmAPI` method signatures (`get_position`, `set_position`, `get_servo_angle`, `set_servo_angle`, `get_gripper_position`, `set_gripper_position`, `set_gripper_g2_position`, `set_tcp_offset`, `reset`, etc.) and return code conventions (`0` for success, `31` for workspace violation, `32` for collision).
+   - `set_position` natively supports partial updates with default parameters (e.g., passing only `z=100` for vertical movement while maintaining other axes).
+2. **Multi-turn closed-loop control optimized for external AI agents (`Observe -> Act -> Feedback`)**:
+   - **Persistent session daemon (`SessionDaemon`)**: Maintains MuJoCo 3D interactive window, video recording, and robot state across multiple CLI invocations via local Unix Domain Socket (`runs/harness.sock`).
+   - **Vision + physics dual-modal feedback**: Every observation or action returns TCP pose (`mm`/`deg`), joint angles, gripper aperture, **bilateral fingertip contact forces (`contact_forces_n`)**, scene object 3D coordinates, and camera/simulation snapshot PNG (`runs/latest_view.png`).
+   - **MCP Server (`stdio`)**: Native support for JSON-RPC 2.0 MCP tool calls (`xarm_observe`, `xarm_set_position`, `xarm_set_gripper_g2_position`, `xarm_pick`, `xarm_place`, etc.).
+3. **Built-in multi-layer safety guardrails**:
+   - Cartesian workspace hard limits and table collision protection ($Z \ge 8\text{ mm}$).
+   - Joint limits and self-collision pre-checks based on inflated capsule models (`CollisionChecker`).
+   - Real hardware defaults to `read_only=True` safety lock; motion commands require explicit `--confirm-real` flag.
 
 ---
 
-## 快速开始
+## Quick Start
 
-### 1. 环境准备
+### 1. Environment Setup
 
 ```bash
 conda activate py314
 ```
 
-### 2. Agent 多轮交互式控制（推荐）
+### 2. Multi-turn Interactive Control via Agent (Recommended)
 
 ```bash
-# 1) 启动后台常驻会话（自动弹出 MuJoCo 3D 实时窗口）
+# 1) Start persistent background session (launches MuJoCo 3D real-time window)
 python main.py session start --backend sim --viewer
 
-# 2) 观测当前状态与场景（生成 runs/latest_view.png 快照）
+# 2) Observe current state and scene (generates runs/latest_view.png snapshot)
 python main.py observe
 
-# 3) 调用标准 XArmAPI 原子指令（支持部分坐标更新）
+# 3) Call standard XArmAPI atomic commands (supports partial coordinate updates)
 python main.py xarm set_gripper_g2_position --pos 84
 python main.py xarm set_position --x 300 --y 0 --z 120 --roll 180 --pitch 0 --yaw 0
 python main.py xarm set_position --z 20
 
-# 4) 或直接调用高层复合技能
+# 4) Or directly invoke high-level composite skills
 python main.py act pick --object cube --grasp-z-mm 13.6
 python main.py act place --x-mm 300 --y-mm 300 --z-mm 15
 
-# 5) 结束常驻会话
+# 5) Stop persistent session
 python main.py session stop
 ```
 
-### 3. 单次指令闭环执行
+### 3. Single-Shot Instruction Execution
 
 ```bash
 python main.py --backend sim --viewer --instruction "Pick up the red cube and place it on the green target."
 ```
 
-### 4. 启动 MCP Server (`stdio`)
+### 4. Start MCP Server (`stdio`)
 
 ```bash
 python main.py mcp --backend sim
 ```
 
----
-
-## 测试验证
+### 5. Render Demo Video
 
 ```bash
-# 代码规范检查
+# 1920x1080 / 30fps / H.264, main view + eye-in-hand picture-in-picture
+conda run -n py314 python scripts/render_demo_video.py --duration 10 --output runs/robot_harness_demo.mp4
+```
+
+---
+
+## Testing & Validation
+
+```bash
+# Code style check
 conda run -n py314 ruff check src tests main.py
 
-# 运行全套单元、仿真与硬件连通性测试
+# Run full test suite (unit, simulation, and hardware connectivity tests)
 conda run -n py314 pytest -v tests
 ```
+
